@@ -138,3 +138,5 @@ wandb/
 *.pt
 *.pb
 *.index
+
+diff_output.txt
