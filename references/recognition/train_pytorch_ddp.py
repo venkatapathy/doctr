@@ -136,6 +136,7 @@ def main(rank: int, world_size: int, args):
                 min_chars=args.min_chars,
                 max_chars=args.max_chars,
                 num_samples=args.val_samples * len(vocab),
+                words_txt_path=args.words_txt_path,
                 font_family=fonts,
                 img_transforms=Compose(
                     [
@@ -228,6 +229,7 @@ def main(rank: int, world_size: int, args):
             min_chars=args.min_chars,
             max_chars=args.max_chars,
             num_samples=args.train_samples * len(vocab),
+            words_txt_path=args.words_txt_path,
             font_family=fonts,
             img_transforms=Compose(
                 [
@@ -389,6 +391,8 @@ def parse_args():
     )
     parser.add_argument("--sched", type=str, default="cosine", help="scheduler to use")
     parser.add_argument("--amp", dest="amp", help="Use Automatic Mixed Precision", action="store_true")
+    parser.add_argument("--words_txt_path", help="The text file contains the words to prepare dataset from.")
+
     args = parser.parse_args()
 
     return args
