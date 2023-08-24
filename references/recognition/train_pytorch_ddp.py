@@ -6,7 +6,7 @@
 import os
 
 os.environ["USE_TORCH"] = "1"
-
+import random
 import datetime
 import hashlib
 import multiprocessing
@@ -115,6 +115,31 @@ def main(rank: int, world_size: int, args):
 
     vocab = VOCABS[args.vocab]
     fonts = args.font.split(",")
+    words_txt_train = None
+    words_txt_var = None
+    if args.words_txt_path:
+        try:
+            with open(args.words_txt_path, "r", encoding="utf-8") as file:
+                words_txt_file_contents = file.readlines()
+
+            # Set a seed for reproducibility
+            random.seed(42)  # you can choose any number you like for the seed
+            # Shuffle the lines
+            random.shuffle(words_txt_file_contents)
+            # Calculate the index where you want to split the data
+            split_index = int(0.8 * len(words_txt_file_contents))
+            
+            # Split the data into training and validation sets
+            words_txt_train = words_txt_file_contents[:split_index]
+            words_txt_var = words_txt_file_contents[split_index:]
+        except FileNotFoundError:
+            words_txt_file_contents = None
+            print(f"File not found: {args.word_txt_path}")
+        except Exception as e:
+            words_txt_file_contents = None
+            print(f"An error occurred: {e}")
+
+        #print("self.words_txt_file_contents",type(self.words_txt_file_contents),len(self.words_txt_file_contents),self.words_txt_file_contents[10000:10001])
 
     if rank == 0:
         # Load val data generator
@@ -136,7 +161,6 @@ def main(rank: int, world_size: int, args):
                 min_chars=args.min_chars,
                 max_chars=args.max_chars,
                 num_samples=args.val_samples * len(vocab),
-                words_txt_path=args.words_txt_path,
                 font_family=fonts,
                 img_transforms=Compose(
                     [
@@ -145,6 +169,7 @@ def main(rank: int, world_size: int, args):
                         T.RandomApply(T.ColorInversion(), 0.9),
                     ]
                 ),
+                words_txt_content=words_txt_var,
             )
 
         val_loader = DataLoader(
@@ -169,7 +194,7 @@ def main(rank: int, world_size: int, args):
     if isinstance(args.resume, str):
         print(f"Resuming {args.resume}")
         checkpoint = torch.load(args.resume, map_location="cpu")
-        model.load_state_dict(checkpoint)
+        model.load_state_dict(checkpoint,strict=False)
 
     # create default process group
     device = torch.device("cuda", args.devices[rank])
@@ -192,7 +217,7 @@ def main(rank: int, world_size: int, args):
         return
 
     st = time.time()
-
+    
     if isinstance(args.train_path, str):
         # Load train data generator
         base_path = Path(args.train_path)
@@ -229,7 +254,6 @@ def main(rank: int, world_size: int, args):
             min_chars=args.min_chars,
             max_chars=args.max_chars,
             num_samples=args.train_samples * len(vocab),
-            words_txt_path=args.words_txt_path,
             font_family=fonts,
             img_transforms=Compose(
                 [
@@ -239,6 +263,7 @@ def main(rank: int, world_size: int, args):
                     ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.02),
                 ]
             ),
+            words_txt_content=words_txt_train,
         )
 
     train_loader = DataLoader(
@@ -314,7 +339,7 @@ def main(rank: int, world_size: int, args):
                 # random parameters and gradients are synchronized in backward passes.
                 # Therefore, saving it in one process is sufficient.
                 print(f"Validation loss decreased {min_loss:.6} --> {val_loss:.6}: saving state...")
-                torch.save(model.state_dict(), f"./{exp_name}.pt")
+                torch.save(model.module.state_dict(), f"./{exp_name}.pt")
             min_loss = val_loss
             mb.write(
                 f"Epoch {epoch + 1}/{args.epochs} - Validation loss: {val_loss:.6} "

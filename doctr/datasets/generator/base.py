@@ -13,7 +13,7 @@ from doctr.utils.fonts import get_font
 
 from ..datasets import AbstractDataset
 
-
+# Assuming file has already been opened and read into self.words_tx
 def synthesize_text_img(
     text: str,
     font_size: int = 32,
@@ -109,7 +109,7 @@ class _WordGenerator(AbstractDataset):
         max_chars: int,
         num_samples: int,
         cache_samples: bool = False,
-        words_txt_path: Optional[str] = None,
+        words_txt_content: any= None,
         font_family: Optional[Union[str, List[str]]] = None,
         img_transforms: Optional[Callable[[Any], Any]] = None,
         sample_transforms: Optional[Callable[[Any, Any], Tuple[Any, Any]]] = None,
@@ -127,22 +127,12 @@ class _WordGenerator(AbstractDataset):
                     raise ValueError(f"unable to locate font: {font}")
         self.img_transforms = img_transforms
         self.sample_transforms = sample_transforms
-        self.words_txt_path = words_txt_path
-        self.words_txt_file_contents = None
+        if words_txt_content:
+            self.words_txt_file_contents=words_txt_content
+        else:
+            self.words_txt_file_contents=None
 
-        if words_txt_path:
-            try:
-                with open(words_txt_path, "r", encoding="utf-8") as file:
-                    self.words_txt_file_contents = file.readlines()
-            except FileNotFoundError:
-                self.words_txt_file_contents = None
-                print(f"File not found: {word_txt_path}")
-            except Exception as e:
-                self.words_txt_file_contents = None
-                print(f"An error occurred: {e}")
-
-        #print("self.words_txt_file_contents",type(self.words_txt_file_contents),len(self.words_txt_file_contents),self.words_txt_file_contents[10000:10001])
-
+        
         self._data: List[Image.Image] = []
         if cache_samples:
             _words = [self._generate_string(*self.wordlen_range) for _ in range(num_samples)]

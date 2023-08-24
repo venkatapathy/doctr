@@ -32,7 +32,8 @@ default_cfgs: Dict[str, Dict[str, Any]] = {
         "std": (0.299, 0.296, 0.301),
         "input_shape": (3, 32, 128),
         "vocab": VOCABS["sanskrit_diacritics_training"],
-        "url": "https://github.com/navaneeth031/navindicDocTRforSansDiacritics/releases/download/Model-IASTENGv3/sanskritiast.pt",
+        "url": "https://github.com/venkatapathy/doctr-sans-iast/releases/download/v0.1/sanskritiast_finetuned.pt",
+        "path": "/home/venkat/workspace/doctr/sanskritiast_synthetic.pt"
     },
     "crnn_mobilenet_v3_small": {
         "mean": (0.694, 0.695, 0.693),
